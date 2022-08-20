@@ -149,6 +149,16 @@ public class JSONObject {
         return map.getClass();
     }
 
+    protected final MapFactory mapFactory;
+
+    public JSONObject(MapFactory mapFactory) {
+        if (mapFactory == null)
+            this.mapFactory = MapFactory.DEFAULT;
+        else
+            this.mapFactory = mapFactory;
+        this.map = mapFactory.newMap(-1);
+    }
+
     /**
      * It is sometimes more convenient and less ambiguous to have a
      * <code>NULL</code> object than to use Java's <code>null</code> value.
@@ -161,13 +171,8 @@ public class JSONObject {
      * Construct an empty JSONObject.
      */
     public JSONObject() {
-        // HashMap is used on purpose to ensure that elements are unordered by
-        // the specification.
-        // JSON tends to be a portable transfer format to allows the container
-        // implementations to rearrange their items for a faster element
-        // retrieval based on associative access.
-        // Therefore, an implementation mustn't rely on the order of the item.
-        this.map = new HashMap<String, Object>();
+        this.mapFactory = MapFactory.DEFAULT;
+        this.map = mapFactory.newMap(-1);
     }
 
     /**
@@ -278,10 +283,28 @@ public class JSONObject {
      *            If a key in the map is <code>null</code>
      */
     public JSONObject(Map<?, ?> m) {
+        this(m, MapFactory.DEFAULT);
+    }
+
+    /**
+     * Construct a JSONObject from a Map.
+     *
+     * @param m
+     *            A map object that can be used to initialize the contents of
+     *            the JSONObject.
+     * @param mapFactory
+     *            A MapFactory that provides the underlying JSON map implementation.
+     * @throws JSONException
+     *            If a value in the map is non-finite number.
+     * @throws NullPointerException
+     *            If a key in the map is <code>null</code>
+     */
+    public JSONObject(Map<?, ?> m, MapFactory mapFactory) {
+        this.mapFactory = mapFactory == null ? MapFactory.DEFAULT : mapFactory;
         if (m == null) {
-            this.map = new HashMap<String, Object>();
+            this.map = mapFactory.newMap(-1);
         } else {
-            this.map = new HashMap<String, Object>(m.size());
+            this.map = mapFactory.newMap(m.size());
         	for (final Entry<?, ?> e : m.entrySet()) {
         	    if(e.getKey() == null) {
         	        throw new NullPointerException("Null key.");
@@ -437,7 +460,7 @@ public class JSONObject {
                     String segment = path[i];
                     JSONObject nextTarget = target.optJSONObject(segment);
                     if (nextTarget == null) {
-                        nextTarget = new JSONObject();
+                        nextTarget = new JSONObject(this.mapFactory);
                         target.put(segment, nextTarget);
                     }
                     target = nextTarget;
@@ -455,7 +478,8 @@ public class JSONObject {
      * @param initialCapacity initial capacity of the internal map.
      */
     protected JSONObject(int initialCapacity){
-        this.map = new HashMap<String, Object>(initialCapacity);
+        this.mapFactory = MapFactory.DEFAULT;
+        this.map = mapFactory.newMap(initialCapacity);
     }
 
     /**
@@ -1839,7 +1863,7 @@ public class JSONObject {
      *            If the key is <code>null</code>.
      */
     public JSONObject put(String key, Map<?, ?> value) throws JSONException {
-        return this.put(key, new JSONObject(value));
+        return this.put(key, new JSONObject(value, mapFactory));
     }
 
     /**
@@ -2653,7 +2677,7 @@ public class JSONObject {
      * @return a java.util.Map containing the entries of this object
      */
     public Map<String, Object> toMap() {
-        Map<String, Object> results = new HashMap<String, Object>();
+        Map<String, Object> results = mapFactory.newMap(-1);
         for (Entry<String, Object> entry : this.entrySet()) {
             Object value;
             if (entry.getValue() == null || NULL.equals(entry.getValue())) {
