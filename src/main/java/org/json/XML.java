@@ -322,7 +322,7 @@ public class XML {
         } else {
             tagName = (String) token;
             token = null;
-            jsonObject = new JSONObject();
+            jsonObject = new JSONObjectBuilder().withMapFactory(context.mapFactory).build();
             boolean nilAttributeFound = false;
             xmlXsiTypeConverter = null;
             for (;;) {
@@ -658,7 +658,7 @@ public class XML {
      * @throws JSONException Thrown if there is an errors while parsing the string
      */
     public static JSONObject toJSONObject(Reader reader, XMLParserConfiguration config) throws JSONException {
-        JSONObject jo = new JSONObject();
+        JSONObject jo = new JSONObjectBuilder().build();
         XMLTokener x = new XMLTokener(reader);
         while (x.more()) {
             x.skipPast("<");

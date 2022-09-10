@@ -233,7 +233,7 @@ public class JSONWriter {
         }
         if (this.mode == 'o' || this.mode == 'a') {
             this.append("{");
-            this.push(new JSONObject());
+            this.push(new JSONObjectBuilder().build());
             this.comma = false;
             return this;
         }
@@ -334,7 +334,10 @@ public class JSONWriter {
         }
         if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
-            return new JSONObject(map).toString();
+            return new JSONObjectBuilder()
+                    .withMap(map)
+                    .build()
+                    .toString();
         }
         if (value instanceof Collection) {
             Collection<?> coll = (Collection<?>) value;

@@ -67,7 +67,7 @@ public class Cookie {
      * portion of the cookie must not be blank.
      */
     public static JSONObject toJSONObject(String string) {
-        final JSONObject     jo = new JSONObject();
+        final JSONObject     jo = new JSONObjectBuilder().build();
         String         name;
         Object         value;
         
