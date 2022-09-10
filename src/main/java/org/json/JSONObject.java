@@ -17,14 +17,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -151,14 +148,6 @@ public class JSONObject {
 
     protected final MapFactory mapFactory;
 
-    public JSONObject(MapFactory mapFactory) {
-        if (mapFactory == null)
-            this.mapFactory = MapFactory.DEFAULT;
-        else
-            this.mapFactory = mapFactory;
-        this.map = mapFactory.newMap(-1);
-    }
-
     /**
      * It is sometimes more convenient and less ambiguous to have a
      * <code>NULL</code> object than to use Java's <code>null</code> value.
@@ -170,9 +159,9 @@ public class JSONObject {
     /**
      * Construct an empty JSONObject.
      */
-    public JSONObject() {
-        this(MapFactory.DEFAULT);
-    }
+//    public JSONObject() {
+//        this(MapFactory.DEFAULT);
+//    }
 
     /**
      * Construct a JSONObject from a subset of another JSONObject. An array of
@@ -184,15 +173,15 @@ public class JSONObject {
      * @param names
      *            An array of strings.
      */
-    public JSONObject(JSONObject jo, String ... names) {
-        this(names.length);
-        for (int i = 0; i < names.length; i += 1) {
-            try {
-                this.putOnce(names[i], jo.opt(names[i]));
-            } catch (Exception ignore) {
-            }
-        }
-    }
+//    public JSONObject(JSONObject jo, String ... names) {
+//        this(names.length);
+//        for (int i = 0; i < names.length; i += 1) {
+//            try {
+//                this.putOnce(names[i], jo.opt(names[i]));
+//            } catch (Exception ignore) {
+//            }
+//        }
+//    }
 
     /**
      * Construct a JSONObject from a JSONTokener.
@@ -203,72 +192,72 @@ public class JSONObject {
      *             If there is a syntax error in the source string or a
      *             duplicated key.
      */
-    public JSONObject(JSONTokener x) throws JSONException {
-        this();
-        char c;
-        String key;
-
-        if (x.nextClean() != '{') {
-            throw x.syntaxError("A JSONObject text must begin with '{'");
-        }
-        for (;;) {
-            char prev = x.getPrevious();
-            c = x.nextClean();
-            switch (c) {
-            case 0:
-                throw x.syntaxError("A JSONObject text must end with '}'");
-            case '}':
-                return;
-            case '{':
-            case '[':
-                if(prev=='{') {
-                    throw x.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
-                }
-                // fall through
-            default:
-                x.back();
-                key = x.nextValue().toString();
-            }
-
-            // The key is followed by ':'.
-
-            c = x.nextClean();
-            if (c != ':') {
-                throw x.syntaxError("Expected a ':' after a key");
-            }
-
-            // Use syntaxError(..) to include error location
-
-            if (key != null) {
-                // Check if key exists
-                if (this.opt(key) != null) {
-                    // key already exists
-                    throw x.syntaxError("Duplicate key \"" + key + "\"");
-                }
-                // Only add value if non-null
-                Object value = x.nextValue();
-                if (value!=null) {
-                    this.put(key, value);
-                }
-            }
-
-            // Pairs are separated by ','.
-
-            switch (x.nextClean()) {
-            case ';':
-            case ',':
-                if (x.nextClean() == '}') {
-                    return;
-                }
-                x.back();
-                break;
-            case '}':
-                return;
-            default:
-                throw x.syntaxError("Expected a ',' or '}'");
-            }
-        }
-    }
+//    public JSONObject(JSONTokener x) throws JSONException {
+//        this();
+//        char c;
+//        String key;
+//
+//        if (x.nextClean() != '{') {
+//            throw x.syntaxError("A JSONObject text must begin with '{'");
+//        }
+//        for (;;) {
+//            char prev = x.getPrevious();
+//            c = x.nextClean();
+//            switch (c) {
+//            case 0:
+//                throw x.syntaxError("A JSONObject text must end with '}'");
+//            case '}':
+//                return;
+//            case '{':
+//            case '[':
+//                if(prev=='{') {
+//                    throw x.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
+//                }
+//                // fall through
+//            default:
+//                x.back();
+//                key = x.nextValue().toString();
+//            }
+//
+//            // The key is followed by ':'.
+//
+//            c = x.nextClean();
+//            if (c != ':') {
+//                throw x.syntaxError("Expected a ':' after a key");
+//            }
+//
+//            // Use syntaxError(..) to include error location
+//
+//            if (key != null) {
+//                // Check if key exists
+//                if (this.opt(key) != null) {
+//                    // key already exists
+//                    throw x.syntaxError("Duplicate key \"" + key + "\"");
+//                }
+//                // Only add value if non-null
+//                Object value = x.nextValue();
+//                if (value!=null) {
+//                    this.put(key, value);
+//                }
+//            }
+//
+//            // Pairs are separated by ','.
+//
+//            switch (x.nextClean()) {
+//            case ';':
+//            case ',':
+//                if (x.nextClean() == '}') {
+//                    return;
+//                }
+//                x.back();
+//                break;
+//            case '}':
+//                return;
+//            default:
+//                throw x.syntaxError("Expected a ',' or '}'");
+//            }
+//        }
+//    }
 
     /**
      * Construct a JSONObject from a Map.
@@ -281,9 +270,9 @@ public class JSONObject {
      * @throws NullPointerException
      *            If a key in the map is <code>null</code>
      */
-    public JSONObject(Map<?, ?> m) {
-        this(m, MapFactory.DEFAULT);
-    }
+//    public JSONObject(Map<?, ?> m) {
+//        this(m, MapFactory.DEFAULT);
+//    }
 
     /**
      * Construct a JSONObject from a Map.
@@ -298,22 +287,9 @@ public class JSONObject {
      * @throws NullPointerException
      *            If a key in the map is <code>null</code>
      */
-    JSONObject(Map<?, ?> m, MapFactory mapFactory) {
+    JSONObject(MapFactory mapFactory, int initialCapacity) {
         this.mapFactory = mapFactory == null ? MapFactory.DEFAULT : mapFactory;
-        if (m == null) {
-            this.map = mapFactory.newMap(-1);
-        } else {
-            this.map = mapFactory.newMap(m.size());
-        	for (final Entry<?, ?> e : m.entrySet()) {
-        	    if(e.getKey() == null) {
-        	        throw new NullPointerException("Null key.");
-        	    }
-                final Object value = e.getValue();
-                if (value != null) {
-                    this.map.put(String.valueOf(e.getKey()), wrap(value));
-                }
-            }
-        }
+            this.map = mapFactory.newMap(initialCapacity);
     }
 
     /**
@@ -374,15 +350,15 @@ public class JSONObject {
      *            An object that has getter methods that should be used to make
      *            a JSONObject.
      */
-    public JSONObject(Object bean) {
-        this();
-        this.populateMap(bean);
-    }
-
-    private JSONObject(Object bean, Set<Object> objectsRecord) {
-        this();
-        this.populateMap(bean, objectsRecord);
-    }
+//    public JSONObject(Object bean) {
+//        this();
+//        this.populateMap(bean);
+//    }
+//
+//    private JSONObject(Object bean, Set<Object> objectsRecord) {
+//        this();
+//        this.populateMap(bean, objectsRecord);
+//    }
 
     /**
      * Construct a JSONObject from an Object, using reflection to find the
@@ -398,17 +374,17 @@ public class JSONObject {
      *            An array of strings, the names of the fields to be obtained
      *            from the object.
      */
-    public JSONObject(Object object, String ... names) {
-        this(names.length);
-        Class<?> c = object.getClass();
-        for (int i = 0; i < names.length; i += 1) {
-            String name = names[i];
-            try {
-                this.putOpt(name, c.getField(name).get(object));
-            } catch (Exception ignore) {
-            }
-        }
-    }
+//    public JSONObject(Object object, String ... names) {
+//        this(names.length);
+//        Class<?> c = object.getClass();
+//        for (int i = 0; i < names.length; i += 1) {
+//            String name = names[i];
+//            try {
+//                this.putOpt(name, c.getField(name).get(object));
+//            } catch (Exception ignore) {
+//            }
+//        }
+//    }
 
     /**
      * Construct a JSONObject from a source JSON text string. This is the most
@@ -422,9 +398,9 @@ public class JSONObject {
      *                If there is a syntax error in the source string or a
      *                duplicated key.
      */
-    public JSONObject(String source) throws JSONException {
-        this(new JSONTokener(source));
-    }
+//    public JSONObject(String source) throws JSONException {
+//        this(new JSONTokener(source));
+//    }
 
     /**
      * Construct a JSONObject from a ResourceBundle.
@@ -436,38 +412,38 @@ public class JSONObject {
      * @throws JSONException
      *             If any JSONExceptions are detected.
      */
-    public JSONObject(String baseName, Locale locale) throws JSONException {
-        this();
-        ResourceBundle bundle = ResourceBundle.getBundle(baseName, locale,
-                Thread.currentThread().getContextClassLoader());
-
-// Iterate through the keys in the bundle.
-
-        Enumeration<String> keys = bundle.getKeys();
-        while (keys.hasMoreElements()) {
-            Object key = keys.nextElement();
-            if (key != null) {
-
-// Go through the path, ensuring that there is a nested JSONObject for each
-// segment except the last. Add the value using the last segment's name into
-// the deepest nested JSONObject.
-
-                String[] path = ((String) key).split("\\.");
-                int last = path.length - 1;
-                JSONObject target = this;
-                for (int i = 0; i < last; i += 1) {
-                    String segment = path[i];
-                    JSONObject nextTarget = target.optJSONObject(segment);
-                    if (nextTarget == null) {
-                        nextTarget = new JSONObject(this.mapFactory);
-                        target.put(segment, nextTarget);
-                    }
-                    target = nextTarget;
-                }
-                target.put(path[last], bundle.getString((String) key));
-            }
-        }
-    }
+//    public JSONObject(String baseName, Locale locale) throws JSONException {
+//        this();
+//        ResourceBundle bundle = ResourceBundle.getBundle(baseName, locale,
+//                Thread.currentThread().getContextClassLoader());
+//
+//// Iterate through the keys in the bundle.
+//
+//        Enumeration<String> keys = bundle.getKeys();
+//        while (keys.hasMoreElements()) {
+//            Object key = keys.nextElement();
+//            if (key != null) {
+//
+//// Go through the path, ensuring that there is a nested JSONObject for each
+//// segment except the last. Add the value using the last segment's name into
+//// the deepest nested JSONObject.
+//
+//                String[] path = ((String) key).split("\\.");
+//                int last = path.length - 1;
+//                JSONObject target = this;
+//                for (int i = 0; i < last; i += 1) {
+//                    String segment = path[i];
+//                    JSONObject nextTarget = target.optJSONObject(segment);
+//                    if (nextTarget == null) {
+//                        nextTarget = new JSONObject(this.mapFactory);
+//                        target.put(segment, nextTarget);
+//                    }
+//                    target = nextTarget;
+//                }
+//                target.put(path[last], bundle.getString((String) key));
+//            }
+//        }
+//    }
 
     /**
      * Constructor to specify an initial capacity of the internal map. Useful for library
@@ -1568,7 +1544,7 @@ public class JSONObject {
                             
                             objectsRecord.add(result);
 
-                            this.map.put(key, wrap(result, objectsRecord));
+                            this.map.put(key, wrap(result, objectsRecord, mapFactory));
 
                             objectsRecord.remove(result);
 
@@ -1862,7 +1838,10 @@ public class JSONObject {
      *            If the key is <code>null</code>.
      */
     public JSONObject put(String key, Map<?, ?> value) throws JSONException {
-        return this.put(key, new JSONObject(value, mapFactory));
+        return this.put(key, new JSONObjectBuilder()
+                .withMapFactory(mapFactory)
+                .withMap(value)
+                .build());
     }
 
     /**
@@ -2468,10 +2447,14 @@ public class JSONObject {
      * @return The wrapped value
      */
     public static Object wrap(Object object) {
-        return wrap(object, null);
+        return wrap(object, null, MapFactory.DEFAULT);
     }
 
-    private static Object wrap(Object object, Set<Object> objectsRecord) {
+    public static Object wrap(Object object, MapFactory mapFactory) {
+        return wrap(object, null, mapFactory);
+    }
+
+    private static Object wrap(Object object, Set<Object> objectsRecord, MapFactory mapFactory) {
         try {
             if (NULL.equals(object)) {
                 return NULL;
@@ -2496,7 +2479,9 @@ public class JSONObject {
             }
             if (object instanceof Map) {
                 Map<?, ?> map = (Map<?, ?>) object;
-                return new JSONObject(map);
+                return new JSONObjectBuilder()
+                        .withMapFactory(mapFactory)
+                        .withMap(map).build();
             }
             Package objectPackage = object.getClass().getPackage();
             String objectPackageName = objectPackage != null ? objectPackage
@@ -2507,9 +2492,15 @@ public class JSONObject {
                 return object.toString();
             }
             if (objectsRecord != null) {
-                return new JSONObject(object, objectsRecord);
+                return new JSONObjectBuilder()
+                        .withMapFactory(mapFactory)
+                        .withSourceBean(object, objectsRecord)
+                        .build();
             }
-            return new JSONObject(object);
+            return new JSONObjectBuilder()
+                    .withMapFactory(mapFactory)
+                    .withSourceBean(object)
+                    .build();
         }
         catch (JSONException exception) {
             throw exception;
@@ -2534,7 +2525,7 @@ public class JSONObject {
 
     @SuppressWarnings("resource")
     static final Writer writeValue(Writer writer, Object value,
-            int indentFactor, int indent) throws JSONException, IOException {
+                                   int indentFactor, int indent, MapFactory mapFactory) throws JSONException, IOException {
         if (value == null || value.equals(null)) {
             writer.write("null");
         } else if (value instanceof JSONString) {
@@ -2565,7 +2556,11 @@ public class JSONObject {
             ((JSONArray) value).write(writer, indentFactor, indent);
         } else if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
-            new JSONObject(map).write(writer, indentFactor, indent);
+            new JSONObjectBuilder()
+                    .withMapFactory(mapFactory)
+                    .withMap(map)
+                    .build()
+                    .write(writer, indentFactor, indent);
         } else if (value instanceof Collection) {
             Collection<?> coll = (Collection<?>) value;
             new JSONArray(coll).write(writer, indentFactor, indent);
@@ -2627,7 +2622,7 @@ public class JSONObject {
                     writer.write(' ');
                 }
                 try{
-                    writeValue(writer, entry.getValue(), indentFactor, indent);
+                    writeValue(writer, entry.getValue(), indentFactor, indent, mapFactory);
                 } catch (Exception e) {
                     throw new JSONException("Unable to write JSONObject value for key: " + key, e);
                 }
@@ -2648,7 +2643,7 @@ public class JSONObject {
                         writer.write(' ');
                     }
                     try {
-                        writeValue(writer, entry.getValue(), indentFactor, newIndent);
+                        writeValue(writer, entry.getValue(), indentFactor, newIndent, mapFactory);
                     } catch (Exception e) {
                         throw new JSONException("Unable to write JSONObject value for key: " + key, e);
                     }

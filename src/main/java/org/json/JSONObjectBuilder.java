@@ -21,9 +21,10 @@ public class JSONObjectBuilder {
     private Map<?, ?> sourceMap = null;
     private Object sourceBean = null;
     private Set<Object> sourceBeanObjectsRecord = null;
-    private String[]  sourceBeanNames = null;
+    private String[] sourceBeanNames = null;
 
     private Locale locale = null;
+    private ResourceBundle sourceResourceBundle;
 
     public JSONObject build() {
         if (mapFactory == null)
@@ -43,7 +44,7 @@ public class JSONObjectBuilder {
                 initialCapacity = potentialCapacityFromSources;
         }
 
-        JSONObject returnValue = new JSONObject(mapFactory.newMap(initialCapacity));
+        JSONObject returnValue = new JSONObject(mapFactory, initialCapacity);
 
         populateFromJSONObject(returnValue);
         populateFromJSONTokenizer(returnValue);
@@ -57,36 +58,64 @@ public class JSONObjectBuilder {
     }
 
     public JSONObjectBuilder withMapFactory(MapFactory mapFactory) {
+        if (mapFactory != null)
+            throw new IllegalArgumentException("Cannot set mapFactory to more than once");
         this.mapFactory = mapFactory;
         return this;
     }
 
     public JSONObjectBuilder withJSONObject(JSONObject jo, String... names) {
+        if (sourceJSONObject != null)
+            throw new IllegalStateException("Cannot set more than one source JSONObject");
         sourceJSONObject = jo;
         sourceJSONObjectAttributeNames = names;
         return this;
     }
 
     public JSONObjectBuilder withJSONTokenizer(JSONTokener x) throws JSONException {
+        if (sourceTokenizer != null)
+            throw new IllegalStateException("Cannot set more than one source JSONTokener");
         this.sourceTokenizer = x;
         return this;
     }
 
+    public JSONObjectBuilder withString(String json) {
+        if (sourceTokenizer != null)
+            throw new IllegalStateException("Cannot set more than one JSONTokener.");
+        this.sourceTokenizer = new JSONTokener(json);
+        return this;
+    }
+
     public JSONObjectBuilder withMap(Map<?, ?> map) {
+        if (sourceMap != null)
+            throw new IllegalStateException("Cannot set more than one Map.");
         this.sourceMap = map;
+        return this;
+    }
+
+    /**
+     * Construct a JSONObject from a ResourceBundle.
+     *
+     * @param baseName The ResourceBundle base name.
+     * @param locale   The Locale to load the ResourceBundle for.
+     * @throws JSONException If any JSONExceptions are detected.
+     */
+    public JSONObjectBuilder withResourceBundle(String baseName, Locale locale) throws JSONException {
+        this.sourceResourceBundle = ResourceBundle.getBundle(baseName, locale,
+                Thread.currentThread().getContextClassLoader());
         return this;
     }
 
     public JSONObjectBuilder withSourceBean(Object bean) {
         if (sourceBean != null)
-            throw new IllegalStateException("Only one bean source can be specified");
+            throw new IllegalStateException("Cannot set more than one source bean.");
         this.sourceBean = bean;
         return this;
     }
 
     public JSONObjectBuilder withSourceBean(Object bean, Set<Object> objectsRecord) {
         if (sourceBean != null)
-            throw new IllegalStateException("Only one bean source can be specified");
+            throw new IllegalStateException("Cannot set more than one source bean.");
         this.sourceBean = bean;
         this.sourceBeanObjectsRecord = objectsRecord;
         return this;
@@ -192,7 +221,7 @@ public class JSONObjectBuilder {
         if (sourceBean == null)
             return;
 
-        if(sourceBeanObjectsRecord == null)
+        if (sourceBeanObjectsRecord == null)
             sourceBeanObjectsRecord = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
 
         Class<?> klass = sourceBean.getClass();
@@ -292,15 +321,11 @@ public class JSONObjectBuilder {
      * Searches the class hierarchy to see if the method or it's super
      * implementations and interfaces has the annotation.
      *
-     * @param <A>
-     *            type of the annotation
-     *
-     * @param m
-     *            method to check
-     * @param annotationClass
-     *            annotation to look for
+     * @param <A>             type of the annotation
+     * @param m               method to check
+     * @param annotationClass annotation to look for
      * @return the {@link Annotation} if the annotation exists on the current method
-     *         or one of its super class definitions
+     * or one of its super class definitions
      */
     private static <A extends Annotation> A getAnnotation(final Method m, final Class<A> annotationClass) {
         // if we have invalid data the result is null
@@ -346,10 +371,8 @@ public class JSONObjectBuilder {
      * implementations and interfaces has the annotation. Returns the depth of the
      * annotation in the hierarchy.
      *
-     * @param m
-     *            method to check
-     * @param annotationClass
-     *            annotation to look for
+     * @param m               method to check
+     * @param annotationClass annotation to look for
      * @return Depth of the annotation or -1 if the annotation is not on the method.
      */
     private static int getAnnotationDepth(final Method m, final Class<? extends Annotation> annotationClass) {
@@ -402,6 +425,7 @@ public class JSONObjectBuilder {
 
     /**
      * Create a new JSONException in a common format for recursive object definition.
+     *
      * @param key name of the key
      * @return JSONException that can be thrown.
      */
@@ -436,7 +460,9 @@ public class JSONObjectBuilder {
             }
             if (object instanceof Map) {
                 Map<?, ?> map = (Map<?, ?>) object;
-                return new JSONObject(map);
+                return new JSONObjectBuilder()
+                        .withMapFactory(mapFactory)
+                        .withMap(map);
             }
             Package objectPackage = object.getClass().getPackage();
             String objectPackageName = objectPackage != null ? objectPackage
@@ -451,9 +477,10 @@ public class JSONObjectBuilder {
                         .withMapFactory(mapFactory)
                         .withSourceBean(object, objectsRecord);
             }
-            return new JSONObject(object);
-        }
-        catch (JSONException exception) {
+            return new JSONObjectBuilder()
+                    .withMapFactory(mapFactory)
+                    .withSourceBean(object);
+        } catch (JSONException exception) {
             throw exception;
         } catch (Exception exception) {
             return null;
@@ -467,14 +494,12 @@ public class JSONObjectBuilder {
      * those keys in the object. If a key is not found or not visible, then it
      * will not be copied into the new JSONObject.
      *
-     * @param object
-     *            An object that has fields that should be used to make a
-     *            JSONObject.
-     * @param names
-     *            An array of strings, the names of the fields to be obtained
-     *            from the object.
+     * @param object An object that has fields that should be used to make a
+     *               JSONObject.
+     * @param names  An array of strings, the names of the fields to be obtained
+     *               from the object.
      */
-    public JSONObjectBuilder withSourceBean(Object object, String ... names) {
+    public JSONObjectBuilder withSourceBean(Object object, String... names) {
         if (sourceBean != null)
             throw new IllegalStateException("Only one bean source can be specified");
         this.sourceBean = object;
@@ -490,14 +515,12 @@ public class JSONObjectBuilder {
      * those keys in the object. If a key is not found or not visible, then it
      * will not be copied into the new JSONObject.
      *
-     * @param object
-     *            An object that has fields that should be used to make a
-     *            JSONObject.
-     * @param names
-     *            An array of strings, the names of the fields to be obtained
-     *            from the object.
+     * @param object An object that has fields that should be used to make a
+     *               JSONObject.
+     * @param names  An array of strings, the names of the fields to be obtained
+     *               from the object.
      */
-    private void populateFromBeanWithNames(JSONObject object, String ... names) {
+    private void populateFromBeanWithNames(JSONObject object, String... names) {
         if (sourceBean == null)
             return;
 
@@ -507,6 +530,34 @@ public class JSONObjectBuilder {
             try {
                 object.putOpt(name, c.getField(name).get(sourceBean));
             } catch (Exception ignore) {
+            }
+        }
+    }
+
+    private void populateFromResourceBundle(JSONObject object) {
+        // Iterate through the keys in the bundle.
+        Enumeration<String> keys = sourceResourceBundle.getKeys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            if (key != null) {
+                // Go through the path, ensuring that there is a nested JSONObject for each
+                // segment except the last. Add the value using the last segment's name into
+                // the deepest nested JSONObject.
+                String[] path = ((String) key).split("\\.");
+                int last = path.length - 1;
+                JSONObject target = object;
+                for (int i = 0; i < last; i += 1) {
+                    String segment = path[i];
+                    JSONObject nextTarget = target.optJSONObject(segment);
+                    if (nextTarget == null) {
+                        nextTarget = new JSONObjectBuilder()
+                                .withMapFactory(this.mapFactory)
+                                .build();
+                        target.put(segment, nextTarget);
+                    }
+                    target = nextTarget;
+                }
+                target.put(path[last], sourceResourceBundle.getString((String) key));
             }
         }
     }

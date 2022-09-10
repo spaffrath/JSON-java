@@ -17,9 +17,9 @@ public interface MapFactory {
         @Override
         public Map<String, Object> newMap(int initialCapacity) {
             if (initialCapacity == -1) {
-                return new HashMap<>();
+                return new HashMap<String, Object>();
             }
-            return new HashMap<>(initialCapacity);
+            return new HashMap<String, Object>(initialCapacity);
         }
     };
 

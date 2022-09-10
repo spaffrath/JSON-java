@@ -68,21 +68,11 @@ public class JSONArray implements Iterable<Object> {
      */
     private final ArrayList<Object> myArrayList;
 
-    private final MapFactory mapFactory;
-
     /**
      * Construct an empty JSONArray.
      */
     public JSONArray() {
-        this(MapFactory.DEFAULT);
-    }
-
-    /**
-     * Construct an empty JSONArray.
-     */
-    public JSONArray(MapFactory mapFactory) {
         this.myArrayList = new ArrayList<Object>();
-        this.mapFactory = mapFactory;
     }
 
     /**
@@ -1016,7 +1006,11 @@ public class JSONArray implements Iterable<Object> {
      *            If a key in the map is <code>null</code>
      */
     public JSONArray put(Map<?, ?> value) {
-        return this.put(new JSONObject(value));
+        return this.put(new JSONObjectBuilder().withMap(value).build());
+    }
+
+    public JSONArray put(Map<?, ?> value, MapFactory mapFactory) {
+        return this.put(new JSONObjectBuilder().withMapFactory(mapFactory).withMap(value).build());
     }
 
     /**
@@ -1153,7 +1147,12 @@ public class JSONArray implements Iterable<Object> {
      *             If a key in the map is <code>null</code>
      */
     public JSONArray put(int index, Map<?, ?> value) throws JSONException {
-        this.put(index, new JSONObject(value));
+        this.put(index,new JSONObjectBuilder().withMap(value).build());
+        return this;
+    }
+
+    public JSONArray put(int index, Map<?, ?> value, MapFactory mapFactory) throws JSONException {
+        this.put(index,new JSONObjectBuilder().withMapFactory(mapFactory).withMap(value).build());
         return this;
     }
 
@@ -1519,7 +1518,8 @@ public class JSONArray implements Iterable<Object> {
             if (length == 1) {
                 try {
                     JSONObject.writeValue(writer, this.myArrayList.get(0),
-                            indentFactor, indent);
+                            indentFactor, indent,
+                            this.myArrayList.get(0) instanceof JSONObject ? ((JSONObject) this.myArrayList.get(0)).mapFactory : null);
                 } catch (Exception e) {
                     throw new JSONException("Unable to write JSONArray value at index: 0", e);
                 }
@@ -1536,7 +1536,9 @@ public class JSONArray implements Iterable<Object> {
                     JSONObject.indent(writer, newIndent);
                     try {
                         JSONObject.writeValue(writer, this.myArrayList.get(i),
-                                indentFactor, newIndent);
+                                indentFactor, newIndent,
+                                this.myArrayList.get(i) instanceof JSONObject ? ((JSONObject) this.myArrayList.get(i)).mapFactory : null);
+
                     } catch (Exception e) {
                         throw new JSONException("Unable to write JSONArray value at index: " + i, e);
                     }
