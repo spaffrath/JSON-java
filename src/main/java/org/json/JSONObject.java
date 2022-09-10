@@ -171,8 +171,7 @@ public class JSONObject {
      * Construct an empty JSONObject.
      */
     public JSONObject() {
-        this.mapFactory = MapFactory.DEFAULT;
-        this.map = mapFactory.newMap(-1);
+        this(MapFactory.DEFAULT);
     }
 
     /**
@@ -299,7 +298,7 @@ public class JSONObject {
      * @throws NullPointerException
      *            If a key in the map is <code>null</code>
      */
-    public JSONObject(Map<?, ?> m, MapFactory mapFactory) {
+    JSONObject(Map<?, ?> m, MapFactory mapFactory) {
         this.mapFactory = mapFactory == null ? MapFactory.DEFAULT : mapFactory;
         if (m == null) {
             this.map = mapFactory.newMap(-1);

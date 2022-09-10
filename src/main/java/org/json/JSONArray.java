@@ -68,11 +68,21 @@ public class JSONArray implements Iterable<Object> {
      */
     private final ArrayList<Object> myArrayList;
 
+    private final MapFactory mapFactory;
+
     /**
      * Construct an empty JSONArray.
      */
     public JSONArray() {
+        this(MapFactory.DEFAULT);
+    }
+
+    /**
+     * Construct an empty JSONArray.
+     */
+    public JSONArray(MapFactory mapFactory) {
         this.myArrayList = new ArrayList<Object>();
+        this.mapFactory = mapFactory;
     }
 
     /**
