@@ -17,7 +17,7 @@ public class JSONObjectBuilder {
     // Populate sources
     private JSONObject sourceJSONObject = null;
     private String[] sourceJSONObjectAttributeNames = null;
-    private JSONTokener sourceTokenizer = null;
+    private JSONTokener sourceTokener = null;
     private Map<?, ?> sourceMap = null;
     private Object sourceBean = null;
     private Set<Object> sourceBeanObjectsRecord = null;
@@ -46,13 +46,15 @@ public class JSONObjectBuilder {
 
         JSONObject returnValue = new JSONObject(mapFactory, initialCapacity);
 
-        populateFromJSONObject(returnValue);
-        populateFromJSONTokenizer(returnValue);
-        populateFromMap(returnValue);
+        populateFromJSONObject(returnValue, sourceJSONObject, sourceJSONObjectAttributeNames);
+        populateFromJSONTokener(returnValue, sourceTokener);
+        populateFromMap(returnValue, sourceMap);
         if (sourceBeanNames != null)
-            populateFromBeanWithNames(returnValue);
+            populateFromBeanWithNames(returnValue, sourceBean, sourceBeanNames);
+        else if (sourceBean != null && sourceBeanObjectsRecord != null)
+            populateFromBeanWithObjectsRecord(returnValue, sourceBean, sourceBeanObjectsRecord, mapFactory);
         else if (sourceBean != null)
-            populateFromBeanWithObjectsRecord(returnValue);
+            populateFromBeanWithObjectsRecord(returnValue, sourceBean, Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>()), mapFactory);
 
         return returnValue;
     }
@@ -73,16 +75,16 @@ public class JSONObjectBuilder {
     }
 
     public JSONObjectBuilder withJSONTokenizer(JSONTokener x) throws JSONException {
-        if (sourceTokenizer != null)
+        if (sourceTokener != null)
             throw new IllegalStateException("Cannot set more than one source JSONTokener");
-        this.sourceTokenizer = x;
+        this.sourceTokener = x;
         return this;
     }
 
     public JSONObjectBuilder withString(String json) {
-        if (sourceTokenizer != null)
+        if (sourceTokener != null)
             throw new IllegalStateException("Cannot set more than one JSONTokener.");
-        this.sourceTokenizer = new JSONTokener(json);
+        this.sourceTokener = new JSONTokener(json);
         return this;
     }
 
@@ -121,52 +123,52 @@ public class JSONObjectBuilder {
         return this;
     }
 
-    private void populateFromJSONObject(JSONObject jo) {
-        if (sourceJSONObject == null || sourceJSONObjectAttributeNames == null)
+    static void populateFromJSONObject(JSONObject jo, JSONObject source, String... names) {
+        if (source == null || names == null)
             return;
 
-        for (int i = 0; i < sourceJSONObjectAttributeNames.length; i += 1) {
+        for (int i = 0; i < names.length; i += 1) {
             try {
-                jo.putOnce(sourceJSONObjectAttributeNames[i], sourceJSONObject.opt(sourceJSONObjectAttributeNames[i]));
+                jo.putOnce(names[i], source.opt(names[i]));
             } catch (Exception ignore) {
             }
         }
     }
 
-    private void populateFromJSONTokenizer(JSONObject jo) throws JSONException {
-        if (sourceTokenizer == null)
+    static void populateFromJSONTokener(JSONObject jo, JSONTokener tokener) throws JSONException {
+        if (tokener == null)
             return;
 
         char c;
         String key;
 
-        if (sourceTokenizer.nextClean() != '{') {
-            throw sourceTokenizer.syntaxError("A JSONObject text must begin with '{'");
+        if (tokener.nextClean() != '{') {
+            throw tokener.syntaxError("A JSONObject text must begin with '{'");
         }
         for (; ; ) {
-            char prev = sourceTokenizer.getPrevious();
-            c = sourceTokenizer.nextClean();
+            char prev = tokener.getPrevious();
+            c = tokener.nextClean();
             switch (c) {
                 case 0:
-                    throw sourceTokenizer.syntaxError("A JSONObject text must end with '}'");
+                    throw tokener.syntaxError("A JSONObject text must end with '}'");
                 case '}':
                     return;
                 case '{':
                 case '[':
                     if (prev == '{') {
-                        throw sourceTokenizer.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
+                        throw tokener.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
                     }
                     // fall through
                 default:
-                    sourceTokenizer.back();
-                    key = sourceTokenizer.nextValue().toString();
+                    tokener.back();
+                    key = tokener.nextValue().toString();
             }
 
             // The key is followed by ':'.
 
-            c = sourceTokenizer.nextClean();
+            c = tokener.nextClean();
             if (c != ':') {
-                throw sourceTokenizer.syntaxError("Expected a ':' after a key");
+                throw tokener.syntaxError("Expected a ':' after a key");
             }
 
             // Use syntaxError(..) to include error location
@@ -175,10 +177,10 @@ public class JSONObjectBuilder {
                 // Check if key exists
                 if (jo.opt(key) != null) {
                     // key already exists
-                    throw sourceTokenizer.syntaxError("Duplicate key \"" + key + "\"");
+                    throw tokener.syntaxError("Duplicate key \"" + key + "\"");
                 }
                 // Only add value if non-null
-                Object value = sourceTokenizer.nextValue();
+                Object value = tokener.nextValue();
                 if (value != null) {
                     jo.put(key, value);
                 }
@@ -186,27 +188,27 @@ public class JSONObjectBuilder {
 
             // Pairs are separated by ','.
 
-            switch (sourceTokenizer.nextClean()) {
+            switch (tokener.nextClean()) {
                 case ';':
                 case ',':
-                    if (sourceTokenizer.nextClean() == '}') {
+                    if (tokener.nextClean() == '}') {
                         return;
                     }
-                    sourceTokenizer.back();
+                    tokener.back();
                     break;
                 case '}':
                     return;
                 default:
-                    throw sourceTokenizer.syntaxError("Expected a ',' or '}'");
+                    throw tokener.syntaxError("Expected a ',' or '}'");
             }
         }
     }
 
-    private void populateFromMap(JSONObject jo) {
-        if (sourceMap == null)
+    static void populateFromMap(JSONObject jo, Map<?, ?> map) {
+        if (map == null)
             return;
 
-        for (final Map.Entry<?, ?> e : sourceMap.entrySet()) {
+        for (final Map.Entry<?, ?> e : map.entrySet()) {
             if (e.getKey() == null) {
                 throw new NullPointerException("Null key.");
             }
@@ -217,14 +219,11 @@ public class JSONObjectBuilder {
         }
     }
 
-    private void populateFromBeanWithObjectsRecord(JSONObject jo) {
-        if (sourceBean == null)
+    static void populateFromBeanWithObjectsRecord(JSONObject jo, Object bean, Set<Object> objectsRecord, MapFactory mapFactory) {
+        if (bean == null)
             return;
 
-        if (sourceBeanObjectsRecord == null)
-            sourceBeanObjectsRecord = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-
-        Class<?> klass = sourceBean.getClass();
+        Class<?> klass = bean.getClass();
 
         // If klass is a System class then set includeSuperClass to false.
 
@@ -242,20 +241,19 @@ public class JSONObjectBuilder {
                 final String key = getKeyNameFromMethod(method);
                 if (key != null && !key.isEmpty()) {
                     try {
-                        final Object result = method.invoke(sourceBean);
+                        final Object result = method.invoke(bean);
                         if (result != null) {
                             // check cyclic dependency and throw error if needed
                             // the wrap and populateMap combination method is
                             // itself DFS recursive
-                            if (sourceBeanObjectsRecord.contains(result)) {
+                            if (objectsRecord.contains(result))
                                 throw recursivelyDefinedObjectException(key);
-                            }
 
-                            sourceBeanObjectsRecord.add(result);
+                            objectsRecord.add(result);
 
-                            jo.put(key, wrap(result, sourceBeanObjectsRecord));
+                            jo.put(key, wrap(result, objectsRecord, mapFactory));
 
-                            sourceBeanObjectsRecord.remove(result);
+                            objectsRecord.remove(result);
 
                             // we don't use the result anywhere outside of wrap
                             // if it's a resource we should be sure to close it
@@ -435,7 +433,7 @@ public class JSONObjectBuilder {
         );
     }
 
-    private Object wrap(Object object, Set<Object> objectsRecord) {
+    private static Object wrap(Object object, Set<Object> objectsRecord, MapFactory mapFactory) {
         try {
             if (JSONObject.NULL.equals(object)) {
                 return JSONObject.NULL;
@@ -487,6 +485,7 @@ public class JSONObjectBuilder {
         }
     }
 
+
     /**
      * Construct a JSONObject from an Object, using reflection to find the
      * public members. The resulting JSONObject's keys will be the strings from
@@ -520,23 +519,23 @@ public class JSONObjectBuilder {
      * @param names  An array of strings, the names of the fields to be obtained
      *               from the object.
      */
-    private void populateFromBeanWithNames(JSONObject object, String... names) {
-        if (sourceBean == null)
+    static void populateFromBeanWithNames(JSONObject jo, Object object, String... names) {
+        if (object == null || names == null)
             return;
 
-        Class<?> c = sourceBean.getClass();
+        Class<?> c = object.getClass();
         for (int i = 0; i < names.length; i += 1) {
             String name = names[i];
             try {
-                object.putOpt(name, c.getField(name).get(sourceBean));
+                jo.putOpt(name, c.getField(name).get(object));
             } catch (Exception ignore) {
             }
         }
     }
 
-    private void populateFromResourceBundle(JSONObject object) {
+    static void populateFromResourceBundle(JSONObject object, ResourceBundle resourceBundle, MapFactory mapFactory) {
         // Iterate through the keys in the bundle.
-        Enumeration<String> keys = sourceResourceBundle.getKeys();
+        Enumeration<String> keys = resourceBundle.getKeys();
         while (keys.hasMoreElements()) {
             Object key = keys.nextElement();
             if (key != null) {
@@ -551,13 +550,13 @@ public class JSONObjectBuilder {
                     JSONObject nextTarget = target.optJSONObject(segment);
                     if (nextTarget == null) {
                         nextTarget = new JSONObjectBuilder()
-                                .withMapFactory(this.mapFactory)
+                                .withMapFactory(mapFactory)
                                 .build();
                         target.put(segment, nextTarget);
                     }
                     target = nextTarget;
                 }
-                target.put(path[last], sourceResourceBundle.getString((String) key));
+                target.put(path[last], resourceBundle.getString((String) key));
             }
         }
     }
