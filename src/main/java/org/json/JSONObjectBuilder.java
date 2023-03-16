@@ -17,7 +17,7 @@ public class JSONObjectBuilder {
     // Populate sources
     private JSONObject sourceJSONObject = null;
     private String[] sourceJSONObjectAttributeNames = null;
-    private JSONTokener sourceTokener = null;
+    private JSONTokener sourceTokenizer = null;
     private Map<?, ?> sourceMap = null;
     private Object sourceBean = null;
     private Set<Object> sourceBeanObjectsRecord = null;
@@ -47,7 +47,7 @@ public class JSONObjectBuilder {
         JSONObject returnValue = new JSONObject(mapFactory, initialCapacity);
 
         populateFromJSONObject(returnValue, sourceJSONObject, sourceJSONObjectAttributeNames);
-        populateFromJSONTokener(returnValue, sourceTokener);
+        populateFromJSONTokener(returnValue, sourceTokenizer);
         populateFromMap(returnValue, sourceMap);
         if (sourceBeanNames != null)
             populateFromBeanWithNames(returnValue, sourceBean, sourceBeanNames);
@@ -60,8 +60,8 @@ public class JSONObjectBuilder {
     }
 
     public JSONObjectBuilder withMapFactory(MapFactory mapFactory) {
-        if (mapFactory != null)
-            throw new IllegalArgumentException("Cannot set mapFactory to more than once");
+        if (this.mapFactory != null)
+            throw new IllegalArgumentException("Cannot set mapFactory more than once");
         this.mapFactory = mapFactory;
         return this;
     }
@@ -75,16 +75,16 @@ public class JSONObjectBuilder {
     }
 
     public JSONObjectBuilder withJSONTokenizer(JSONTokener x) throws JSONException {
-        if (sourceTokener != null)
+        if (sourceTokenizer != null)
             throw new IllegalStateException("Cannot set more than one source JSONTokener");
-        this.sourceTokener = x;
+        this.sourceTokenizer = x;
         return this;
     }
 
     public JSONObjectBuilder withString(String json) {
-        if (sourceTokener != null)
+        if (sourceTokenizer != null)
             throw new IllegalStateException("Cannot set more than one JSONTokener.");
-        this.sourceTokener = new JSONTokener(json);
+        this.sourceTokenizer = new JSONTokener(json);
         return this;
     }
 
