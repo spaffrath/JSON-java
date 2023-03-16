@@ -15,13 +15,19 @@ import java.util.Map;
 public interface MapFactory {
     MapFactory DEFAULT = new MapFactory() {
         @Override
+        public Map<String, Object> newMap() {
+            return new HashMap<>();
+        }
+
+        @Override
         public Map<String, Object> newMap(int initialCapacity) {
             if (initialCapacity == -1) {
-                return new HashMap<String, Object>();
+                return new HashMap<>();
             }
-            return new HashMap<String, Object>(initialCapacity);
+            return new HashMap<>(initialCapacity);
         }
     };
 
     Map<String, Object> newMap(int initialCapacity);
+    Map<String, Object> newMap();
 }

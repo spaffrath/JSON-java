@@ -149,6 +149,8 @@ public class JSONObject {
         return map.getClass();
     }
 
+    protected final MapFactory mapFactory;
+
     /**
      * It is sometimes more convenient and less ambiguous to have a
      * <code>NULL</code> object than to use Java's <code>null</code> value.
@@ -161,13 +163,7 @@ public class JSONObject {
      * Construct an empty JSONObject.
      */
     public JSONObject() {
-        // HashMap is used on purpose to ensure that elements are unordered by
-        // the specification.
-        // JSON tends to be a portable transfer format to allows the container
-        // implementations to rearrange their items for a faster element
-        // retrieval based on associative access.
-        // Therefore, an implementation mustn't rely on the order of the item.
-        this.map = new HashMap<String, Object>();
+        this(MapFactory.DEFAULT);
     }
 
     /**
@@ -181,7 +177,7 @@ public class JSONObject {
      *            An array of strings.
      */
     public JSONObject(JSONObject jo, String ... names) {
-        this(names.length);
+        this(MapFactory.DEFAULT, names.length);
         for (int i = 0; i < names.length; i += 1) {
             try {
                 this.putOnce(names[i], jo.opt(names[i]));
@@ -278,10 +274,11 @@ public class JSONObject {
      *            If a key in the map is <code>null</code>
      */
     public JSONObject(Map<?, ?> m) {
+        this.mapFactory = MapFactory.DEFAULT;
         if (m == null) {
-            this.map = new HashMap<String, Object>();
+            this.map = mapFactory.newMap();
         } else {
-            this.map = new HashMap<String, Object>(m.size());
+            this.map = mapFactory.newMap(m.size());
         	for (final Entry<?, ?> e : m.entrySet()) {
         	    if(e.getKey() == null) {
         	        throw new NullPointerException("Null key.");
@@ -292,6 +289,27 @@ public class JSONObject {
                 }
             }
         }
+    }
+
+    /**
+     * Construct a JSONObject from a Map.
+     *
+     * @param mapFactory
+     *            A MapFactory that provides the underlying JSON map implementation.
+     * @throws JSONException
+     *            If a value in the map is non-finite number.
+     * @throws NullPointerException
+     *            If a key in the map is <code>null</code>
+     */
+
+    JSONObject(MapFactory mapFactory) {
+        this.mapFactory = mapFactory == null ? MapFactory.DEFAULT : mapFactory;
+        this.map = mapFactory.newMap();
+    }
+
+    JSONObject(MapFactory mapFactory, int initialCapacity) {
+        this.mapFactory = mapFactory == null ? MapFactory.DEFAULT : mapFactory;
+        this.map = mapFactory.newMap(initialCapacity);
     }
 
     /**
@@ -455,7 +473,8 @@ public class JSONObject {
      * @param initialCapacity initial capacity of the internal map.
      */
     protected JSONObject(int initialCapacity){
-        this.map = new HashMap<String, Object>(initialCapacity);
+        this.mapFactory = MapFactory.DEFAULT;
+        this.map = mapFactory.newMap(initialCapacity);
     }
 
     /**
@@ -1545,7 +1564,7 @@ public class JSONObject {
                             
                             objectsRecord.add(result);
 
-                            this.map.put(key, wrap(result, objectsRecord));
+                            this.map.put(key, wrap(result, objectsRecord, mapFactory));
 
                             objectsRecord.remove(result);
 
@@ -2445,10 +2464,10 @@ public class JSONObject {
      * @return The wrapped value
      */
     public static Object wrap(Object object) {
-        return wrap(object, null);
+        return wrap(object, null, MapFactory.DEFAULT);
     }
 
-    private static Object wrap(Object object, Set<Object> objectsRecord) {
+    private static Object wrap(Object object, Set<Object> objectsRecord, MapFactory mapFactory) {
         try {
             if (NULL.equals(object)) {
                 return NULL;
@@ -2511,7 +2530,7 @@ public class JSONObject {
 
     @SuppressWarnings("resource")
     static final Writer writeValue(Writer writer, Object value,
-            int indentFactor, int indent) throws JSONException, IOException {
+                                   int indentFactor, int indent, MapFactory mapFactory) throws JSONException, IOException {
         if (value == null || value.equals(null)) {
             writer.write("null");
         } else if (value instanceof JSONString) {
@@ -2604,7 +2623,7 @@ public class JSONObject {
                     writer.write(' ');
                 }
                 try{
-                    writeValue(writer, entry.getValue(), indentFactor, indent);
+                    writeValue(writer, entry.getValue(), indentFactor, indent, mapFactory);
                 } catch (Exception e) {
                     throw new JSONException("Unable to write JSONObject value for key: " + key, e);
                 }
@@ -2625,7 +2644,7 @@ public class JSONObject {
                         writer.write(' ');
                     }
                     try {
-                        writeValue(writer, entry.getValue(), indentFactor, newIndent);
+                        writeValue(writer, entry.getValue(), indentFactor, newIndent, mapFactory);
                     } catch (Exception e) {
                         throw new JSONException("Unable to write JSONObject value for key: " + key, e);
                     }
@@ -2653,7 +2672,7 @@ public class JSONObject {
      * @return a java.util.Map containing the entries of this object
      */
     public Map<String, Object> toMap() {
-        Map<String, Object> results = new HashMap<String, Object>();
+        Map<String, Object> results = mapFactory.newMap();
         for (Entry<String, Object> entry : this.entrySet()) {
             Object value;
             if (entry.getValue() == null || NULL.equals(entry.getValue())) {

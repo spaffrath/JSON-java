@@ -76,6 +76,11 @@ public class JSONArray implements Iterable<Object> {
     }
 
     /**
+     * A map factory used to create maps for JSONObject objects stored in this array.
+     */
+    private MapFactory mapFactory = MapFactory.DEFAULT;
+
+    /**
      * Construct a JSONArray from a JSONTokener.
      *
      * @param x
@@ -1509,7 +1514,7 @@ public class JSONArray implements Iterable<Object> {
             if (length == 1) {
                 try {
                     JSONObject.writeValue(writer, this.myArrayList.get(0),
-                            indentFactor, indent);
+                            indentFactor, indent, mapFactory);
                 } catch (Exception e) {
                     throw new JSONException("Unable to write JSONArray value at index: 0", e);
                 }
@@ -1526,7 +1531,7 @@ public class JSONArray implements Iterable<Object> {
                     JSONObject.indent(writer, newIndent);
                     try {
                         JSONObject.writeValue(writer, this.myArrayList.get(i),
-                                indentFactor, newIndent);
+                                indentFactor, newIndent, mapFactory);
                     } catch (Exception e) {
                         throw new JSONException("Unable to write JSONArray value at index: " + i, e);
                     }
