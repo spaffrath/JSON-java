@@ -181,6 +181,10 @@ public class JSONObject {
      */
     public JSONObject(JSONObject jo, String ... names) {
         this(MapFactory.DEFAULT, names.length);
+        populateFromJSONObject(jo, names);
+    }
+
+    void populateFromJSONObject(JSONObject jo, String ... names) {
         for (int i = 0; i < names.length; i += 1) {
             try {
                 this.putOnce(names[i], jo.opt(names[i]));
@@ -200,6 +204,10 @@ public class JSONObject {
      */
     public JSONObject(JSONTokener x) throws JSONException {
         this();
+        populateFromJSONTokenizer(x);
+    }
+
+    void populateFromJSONTokenizer(JSONTokener x) throws JSONException {
         char c;
         String key;
 
@@ -282,14 +290,18 @@ public class JSONObject {
             this.map = mapFactory.newMap();
         } else {
             this.map = mapFactory.newMap(m.size());
-        	for (final Entry<?, ?> e : m.entrySet()) {
-        	    if(e.getKey() == null) {
-        	        throw new NullPointerException("Null key.");
-        	    }
-                final Object value = e.getValue();
-                if (value != null) {
-                    this.map.put(String.valueOf(e.getKey()), wrap(value));
-                }
+            populateFromMap(m);
+       }
+    }
+
+    void populateFromMap(Map<?, ?> m) {
+        for (final Entry<?, ?> e : m.entrySet()) {
+            if(e.getKey() == null) {
+                throw new NullPointerException("Null key.");
+            }
+            final Object value = e.getValue();
+            if (value != null) {
+                this.map.put(String.valueOf(e.getKey()), wrap(value));
             }
         }
     }
@@ -378,7 +390,7 @@ public class JSONObject {
         this.populateMap(bean);
     }
 
-    private JSONObject(Object bean, Set<Object> objectsRecord) {
+    JSONObject(Object bean, Set<Object> objectsRecord) {
         this();
         this.populateMap(bean, objectsRecord);
     }
@@ -399,6 +411,10 @@ public class JSONObject {
      */
     public JSONObject(Object object, String ... names) {
         this(names.length);
+        populateFromObject(object, names);
+   }
+
+    void populateFromObject(Object object, String ... names) {
         Class<?> c = object.getClass();
         for (int i = 0; i < names.length; i += 1) {
             String name = names[i];
